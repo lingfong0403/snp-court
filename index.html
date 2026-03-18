@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNP Social N Pickle・場地預約</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0e0e0e;
+  --surface:  #161616;
+  --card:     #1c1c1c;
+  --border:   #2a2a2a;
+  --accent:   #b8f542;
+  --accent2:  #78d400;
+  --open:     #1e3a12;
+  --open-b:   #4caf1a;
+  --booked:   #2a1515;
+  --booked-b: #7a2020;
+  --partial:  #2a2208;
+  --partial-b:#c8960a;
+  --text:     #e8e8e8;
+  --muted:    #666;
+  --muted2:   #444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ─── hero ─── */
+.hero {
+  position: relative;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 24px 40px;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,245,66,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(44px, 8vw, 80px);
+  line-height: 0.9;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.hero-title span { color: var(--accent); }
+.hero-sub {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 10px;
+}
+.hero-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(184,245,66,0.08);
+  border: 1px solid rgba(184,245,66,0.2);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.hero-badge .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ─── main layout ─── */
+.page { max-width: 960px; margin: 0 auto; padding: 32px 16px 80px; }
+
+/* ─── summary ─── */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.summary-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.summary-card:hover::after { transform: scaleX(1); }
+.summary-card .num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.summary-card .lbl {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ─── toolbar ─── */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  font-family: 'Noto Sans TC', sans-serif;
+  padding: 8px 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0e0e0e;
+  font-weight: 500;
+}
+.week-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+.week-btn {
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.week-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.week-btn:disabled { opacity: 0.3; cursor: default; }
+.week-label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ─── legend ─── */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+.legend-dot {
+  width: 14px; height: 14px;
+  border-radius: 2px;
+}
+
+/* ─── grid ─── */
+.grid-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.grid-scroll { overflow-x: auto; }
+.grid {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  min-width: 580px;
+}
+.time-label {
+  font-size: 10px;
+  color: var(--muted2);
+  text-align: right;
+  padding-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 28px;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 1px;
+}
+.day-header {
+  text-align: center;
+  padding: 6px 4px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.day-header .ddate {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  display: block;
+  color: var(--text);
+  line-height: 1;
+}
+.day-header.today .ddate { color: var(--accent); }
+.day-header.today { border-bottom-color: var(--accent); }
+
+.cell {
+  height: 28px;
+  border-radius: 2px;
+  cursor: default;
+  transition: all 0.15s;
+  position: relative;
+}
+.cell.open {
+  background: var(--open);
+  border: 1px solid var(--open-b);
+  cursor: pointer;
+}
+.cell.open:hover {
+  background: #2d5a1a;
+  border-color: var(--accent);
+  transform: scaleY(1.05);
+}
+.cell.partial {
+  background: var(--partial);
+  border: 1px solid var(--partial-b);
+  cursor: pointer;
+}
+.cell.partial:hover {
+  background: #3a3010;
+  transform: scaleY(1.05);
+}
+.cell.booked {
+  background: var(--booked);
+  border: 1px solid var(--booked-b);
+}
+.cell.empty {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid transparent;
+}
+.cell.past { opacity: 0.2; cursor: default; }
+.cell.past:hover { transform: none; }
+
+/* ─── CTA strip ─── */
+.cta-strip {
+  background: linear-gradient(135deg, rgba(184,245,66,0.06) 0%, rgba(184,245,66,0.02) 100%);
+  border: 1px solid rgba(184,245,66,0.15);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.cta-strip p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.cta-strip strong { color: var(--text); }
+.book-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #0e0e0e;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  padding: 12px 28px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.book-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(184,245,66,0.2);
+}
+.book-btn svg { flex-shrink: 0; }
+
+/* ─── info strip ─── */
+.info-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.info-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.info-chip svg { color: var(--accent); flex-shrink: 0; }
+
+/* ─── tooltip ─── */
+.tt {
+  position: fixed;
+  background: #1e1e1e;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  line-height: 1.6;
+  white-space: pre-line;
+  max-width: 180px;
+}
+
+/* ─── footer ─── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted2);
+}
+.footer a { color: var(--muted); text-decoration: none; }
+.footer a:hover { color: var(--accent); }
+
+/* ─── responsive ─── */
+@media (max-width: 600px) {
+  .hero { padding: 36px 16px 28px; }
+  .toolbar { gap: 6px; }
+  .week-nav { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ░░ HERO ░░ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-title">SOCIAL<br><span>N PICKLE</span></div>
+      <div class="hero-sub">桃園龜山・匹克球場地預約</div>
+    </div>
+    <div class="hero-badge">
+      <div class="dot"></div>
+      即時空場查看
+    </div>
+  </div>
+</div>
+
+<!-- ░░ MAIN ░░ -->
+<div class="page">
+
+  <!-- 摘要 -->
+  <div class="summary-row" id="summary"></div>
+
+  <!-- 工具列 -->
+  <div class="toolbar">
+    <button class="tab-btn active" onclick="setCourt('both')">全部球場</button>
+    <button class="tab-btn" onclick="setCourt('Court 1')">Court 1</button>
+    <button class="tab-btn" onclick="setCourt('Court 2')">Court 2</button>
+
+    <div class="week-nav">
+      <button class="week-btn" id="prevBtn" onclick="changeWeek(-1)">&#8249;</button>
+      <div class="week-label" id="weekLabel"></div>
+      <button class="week-btn" id="nextBtn" onclick="changeWeek(1)">&#8250;</button>
+    </div>
+  </div>
+
+  <!-- 圖例 -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--open);border:1px solid var(--open-b)"></div>
+      空場・可預約
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--partial);border:1px solid var(--partial-b)"></div>
+      部分空場（僅剩一場）
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--booked);border:1px solid var(--booked-b)"></div>
+      已全部預約
+    </div>
+  </div>
+
+  <!-- 格狀行事曆 -->
+  <div class="grid-wrap">
+    <div class="grid-scroll">
+      <div class="grid" id="main-grid"></div>
+    </div>
+  </div>
+
+  <!-- 資訊條 -->
+  <div class="info-row">
+    <div class="info-chip">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      開放時間 13:00 – 01:00
+    </div>
+    <div class="info-chip">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      桃園市龜山區大湖路160巷50號
+    </div>
+    <div class="info-chip">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.5 2 2 0 0 1 3.58 1.34h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      0958-526-035
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-strip">
+    <div>
+      <p><strong>看到想要的時段了嗎？</strong></p>
+      <p>點擊下方按鈕進入線上預約系統，選擇日期與球場完成預約。</p>
+    </div>
+    <a class="book-btn" href="https://socialnpickle.booknow.com.tw" target="_blank" rel="noopener">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      立即線上預約
+    </a>
+  </div>
+
+</div>
+
+<!-- tooltip -->
+<div class="tt" id="tt"></div>
+
+<!-- ░░ FOOTER ░░ -->
+<div class="footer">
+  <p>© 2026 Social N Pickle・<a href="https://socialnpickle.booknow.com.tw" target="_blank">線上預約系統</a>・<a href="https://www.instagram.com/socialnpickle" target="_blank">Instagram</a>・<a href="https://www.facebook.com/share/14nV8nS2vX/" target="_blank">Facebook</a></p>
+  <p style="margin-top:6px;color:#333">顏色僅供參考，實際空場以場館確認為準</p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ★ 設定區
+// ═══════════════════════════════════════════════════════
+const BOOKNOW_URL = 'https://socialnpickle.booknow.com.tw';
+const OPEN_START  = 13;  // 開放開始時間
+const OPEN_END    = 25;  // 開放結束時間（25 = 凌晨 1:00）
+
+// Google Apps Script URL（設定後自動讀取預約，留空則用靜態資料）
+const APPS_SCRIPT_URL = '';
+
+// 靜態預約資料（未設定 Google Sheet 時使用）
+// 格式：{date:'月/日', court:'Court 1' 或 'Court 2', start:開始時, end:結束時}
+const STATIC_BOOKINGS = [
+  {date:'3/18',court:'Court 2',start:22,end:25},{date:'3/18',court:'Court 2',start:20,end:22},
+  {date:'3/18',court:'Court 2',start:18,end:20},{date:'3/18',court:'Court 2',start:13,end:16},
+  {date:'3/18',court:'Court 1',start:22,end:25},{date:'3/18',court:'Court 1',start:19,end:21},
+  {date:'3/18',court:'Court 1',start:14,end:17},
+  {date:'3/19',court:'Court 2',start:19,end:22},{date:'3/19',court:'Court 2',start:16,end:22},
+  {date:'3/19',court:'Court 1',start:20,end:23},{date:'3/19',court:'Court 1',start:16,end:22},
+  {date:'3/20',court:'Court 2',start:19,end:23},{date:'3/20',court:'Court 2',start:13,end:17},
+  {date:'3/20',court:'Court 1',start:19,end:23},{date:'3/20',court:'Court 1',start:13,end:16},
+  {date:'3/21',court:'Court 2',start:18,end:20},{date:'3/21',court:'Court 2',start:14,end:17},
+  {date:'3/21',court:'Court 1',start:16,end:18},{date:'3/21',court:'Court 1',start:13,end:16},
+  {date:'3/22',court:'Court 2',start:13,end:17},
+  {date:'3/22',court:'Court 1',start:15,end:17},{date:'3/22',court:'Court 1',start:13,end:16},
+  {date:'3/23',court:'Court 1',start:14,end:16},
+  {date:'3/24',court:'Court 2',start:22,end:24},{date:'3/24',court:'Court 2',start:19,end:21},
+  {date:'3/24',court:'Court 2',start:16,end:19},
+  {date:'3/24',court:'Court 1',start:20,end:23},{date:'3/24',court:'Court 1',start:14,end:16},
+  {date:'3/25',court:'Court 2',start:22,end:25},{date:'3/25',court:'Court 2',start:18,end:22},
+  {date:'3/25',court:'Court 1',start:22,end:25},{date:'3/25',court:'Court 1',start:17,end:20},
+  {date:'3/26',court:'Court 2',start:17,end:20},
+  {date:'3/26',court:'Court 1',start:20,end:23},{date:'3/26',court:'Court 1',start:17,end:20},
+  {date:'3/27',court:'Court 2',start:19,end:23},{date:'3/27',court:'Court 1',start:19,end:23},
+  {date:'3/28',court:'Court 2',start:13,end:21},{date:'3/28',court:'Court 1',start:13,end:21},
+  {date:'3/29',court:'Court 2',start:19,end:22},{date:'3/29',court:'Court 2',start:13,end:17},
+  {date:'3/29',court:'Court 1',start:13,end:16},
+  {date:'3/30',court:'Court 2',start:14,end:16},{date:'3/30',court:'Court 1',start:14,end:16},
+  {date:'3/31',court:'Court 2',start:22,end:24},{date:'3/31',court:'Court 2',start:18,end:21},
+  {date:'3/31',court:'Court 1',start:20,end:23},{date:'3/31',court:'Court 1',start:14,end:16},
+  {date:'3/31',court:'Court 1',start:18,end:20},
+];
+// ═══════════════════════════════════════════════════════
+
+const HOURS = Array.from({length: OPEN_END - OPEN_START}, (_, i) => OPEN_START + i);
+let bookings = [];
+let currentCourt = 'both';
+let weekOffset = 0;  // 0 = 本週, 1 = 下週...
+
+// ── 產生日期列表（依 weekOffset）──
+function getWeekDays() {
+  const now = new Date();
+  const days = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + weekOffset * 14 + i);
+    const m = d.getMonth() + 1;
+    const dd = d.getDate();
+    const week = ['日','一','二','三','四','五','六'][d.getDay()];
+    days.push({ label: `${m}/${dd}`, sub: week, date: `${m}/${dd}`, jsDate: d });
+  }
+  return days;
+}
+
+function isBefore(d1, d2) {
+  return d1.getFullYear() < d2.getFullYear() ||
+    (d1.getFullYear() === d2.getFullYear() && d1.getMonth() < d2.getMonth()) ||
+    (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() < d2.getDate());
+}
+
+// ── 預約判斷 ──
+function isBookedFor(date, hour, court) {
+  return bookings.some(b => b.date === date && b.court === court && b.start <= hour && b.end > hour);
+}
+function isPast(jsDate, hour) {
+  const now = new Date();
+  const t = new Date(jsDate);
+  t.setHours(hour, 0, 0, 0);
+  return t < now;
+}
+function getCellState(date, hour) {
+  if (currentCourt === 'both') {
+    const c1 = isBookedFor(date, hour, 'Court 1');
+    const c2 = isBookedFor(date, hour, 'Court 2');
+    if (c1 && c2)  return { cls: 'booked',  tip: '兩場均已預約' };
+    if (c1)        return { cls: 'partial', tip: 'Court 2 空場可預約\nCourt 1 已預約' };
+    if (c2)        return { cls: 'partial', tip: 'Court 1 空場可預約\nCourt 2 已預約' };
+    return { cls: 'open', tip: 'Court 1 & 2 均可預約\n點擊前往預約系統' };
+  }
+  return isBookedFor(date, hour, currentCourt)
+    ? { cls: 'booked',  tip: `${currentCourt} 已預約` }
+    : { cls: 'open',    tip: `${currentCourt} 空場・可預約\n點擊前往預約系統` };
+}
+
+// ── 渲染 ──
+function render() {
+  const days = getWeekDays();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const grid = document.getElementById('main-grid');
+  grid.style.gridTemplateColumns = `36px repeat(${days.length}, 1fr)`;
+
+  // 週導覽
+  const first = days[0], last = days[days.length-1];
+  document.getElementById('weekLabel').textContent =
+    `${first.label} – ${last.label}`;
+  document.getElementById('prevBtn').disabled = weekOffset <= 0;
+  document.getElementById('nextBtn').disabled = weekOffset >= 3;
+
+  // 頭列
+  let html = '<div class="time-label"></div>';
+  days.forEach(d => {
+    const dt = new Date(d.jsDate); dt.setHours(0,0,0,0);
+    const isToday = dt.getTime() === today.getTime();
+    html += `<div class="day-header${isToday ? ' today' : ''}">
+      <span class="ddate">${d.label}</span>${d.sub}
+    </div>`;
+  });
+
+  // 時段列
+  HOURS.forEach(hour => {
+    const h = hour >= 24 ? `0${hour-24}:00` : `${hour}:00`;
+    html += `<div class="time-label">${h}</div>`;
+    days.forEach(d => {
+      const past = isPast(d.jsDate, hour);
+      const { cls, tip } = getCellState(d.date, hour);
+      const finalCls = `cell ${past ? 'past empty' : cls}`;
+      const click = !past && (cls === 'open' || cls === 'partial')
+        ? `onclick="window.open('${BOOKNOW_URL}','_blank')"` : '';
+      html += `<div class="${finalCls}" ${click} data-tip="${past ? '' : tip}"
+        onmouseenter="showTip(event,this)" onmouseleave="hideTip()"></div>`;
+    });
+  });
+
+  grid.innerHTML = html;
+  updateSummary(days);
+}
+
+function updateSummary(days) {
+  let open = 0, booked = 0;
+  days.forEach(d => {
+    HOURS.forEach(h => {
+      if (isPast(d.jsDate, h)) return;
+      if (currentCourt === 'both') {
+        const c1 = isBookedFor(d.date, h, 'Court 1');
+        const c2 = isBookedFor(d.date, h, 'Court 2');
+        c1 ? booked++ : open++;
+        c2 ? booked++ : open++;
+      } else {
+        isBookedFor(d.date, h, currentCourt) ? booked++ : open++;
+      }
+    });
+  });
+  const pct = open + booked > 0 ? Math.round(booked / (open + booked) * 100) : 0;
+  const openDays = days.filter(d => {
+    const dt = new Date(d.jsDate); dt.setHours(0,0,0,0);
+    return dt >= new Date(new Date().setHours(0,0,0,0));
+  }).length;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card">
+      <div class="num" style="color:var(--accent)">${open}</div>
+      <div class="lbl">可預約時段</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" style="color:#e05050">${booked}</div>
+      <div class="lbl">已預約時段</div>
+    </div>
+    <div class="summary-card">
+      <div class="num">${pct}%</div>
+      <div class="lbl">預約率</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" style="color:#aaa">${openDays}</div>
+      <div class="lbl">顯示天數</div>
+    </div>
+  `;
+}
+
+// ── 控制 ──
+function setCourt(c) {
+  currentCourt = c;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', ['both','Court 1','Court 2'][i] === c);
+  });
+  render();
+}
+
+function changeWeek(dir) {
+  weekOffset = Math.max(0, Math.min(3, weekOffset + dir));
+  render();
+}
+
+// ── Tooltip ──
+const ttEl = document.getElementById('tt');
+function showTip(e, el) {
+  const tip = el.dataset.tip;
+  if (!tip) return;
+  ttEl.textContent = tip;
+  ttEl.style.display = 'block';
+  ttEl.style.left = (e.clientX + 14) + 'px';
+  ttEl.style.top  = (e.clientY - 10) + 'px';
+}
+function hideTip() { ttEl.style.display = 'none'; }
+document.addEventListener('mousemove', e => {
+  ttEl.style.left = (e.clientX + 14) + 'px';
+  ttEl.style.top  = (e.clientY - 10) + 'px';
+});
+
+// ── 資料載入 ──
+async function loadData() {
+  if (!APPS_SCRIPT_URL) {
+    bookings = STATIC_BOOKINGS;
+    render();
+    return;
+  }
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL);
+    const json = await res.json();
+    bookings = json.bookings || STATIC_BOOKINGS;
+  } catch {
+    bookings = STATIC_BOOKINGS;
+  }
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>
